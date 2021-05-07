@@ -14,6 +14,17 @@ module Kernel
   end
 end
 
+class Hash
+  def method_missing(name, *args, **nargs, &block)
+    if self.include?(name) 
+      self[name]
+    else 
+      super(name, *args, **nargs, &block)
+    end
+  end
+
+end
+
 puts "loading libs"
 
 require 'sqlite3'
@@ -39,17 +50,17 @@ class CharacterManager < Struct.new(:db)
         CREATE TABLE IF NOT EXISTS characters(
           name text,
           user_id int,
-          char_id int
+          chat_id int
         );
       SQL
     end
 
     def is_user_have_character?(user_id)
-      (db.execute "SELECT * FROM characters WHERE user_id = ? LIMIT 1", user_id).first
+      (db.execute "SELECT * FROM characters WHERE user_id = ? LIMIT 1", user_id).first.to_b
     end
 
-    def add_character(name, user_id)
-      db.execute "INSERT INTO characters VALUES(?, ?)", [user_id, name]
+    def add_character(name:, user_id:, chat_id:)
+      db.execute "INSERT INTO characters VALUES(?, ?, ?)", [name, user_id, chat_id]
     end
 
     
@@ -83,9 +94,13 @@ base_events = GameCommandEventsHandler.new()
   
 dispatcher = CommandDispatcher.new()
   .overturn_method("/help", base_events)
-  .overturn_method("/obtain_charracter", base_events)
+  .overturn_method("/obtain_character", base_events)
 
 puts "starting bot"
+
+
+
+
 
 Telegram::Bot::Client.run(token) do |bot|
   base_events.set_bot(bot)
